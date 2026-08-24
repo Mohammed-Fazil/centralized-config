@@ -46,11 +46,11 @@ global/application-qa.properties
 global/application-prod.properties
 ```
 
-Contain properties specific to each environment.
+Contain environment-specific global properties.
 
 ## Service Configuration
 
-Each service has its own folder.
+Each service has its own configuration folder.
 
 For example:
 
@@ -105,7 +105,7 @@ For example:
 order-service + qa
 ```
 
-uses the configuration from:
+uses:
 
 ```text
 global/application.properties
@@ -116,23 +116,21 @@ order-service/order-service-qa.properties
 
 ## Configuration Precedence
 
-Configuration is resolved from general to specific.
+Configuration is resolved from the least specific source to the most specific source, with the most specific source having the highest precedence.
 
-For `order-service` with the `qa` profile:
+For `order-service` with the `qa` profile, the precedence from **highest to lowest** is:
 
 ```text
-global/application.properties
-        ↓
-order-service/order-service.properties
-        ↓
-global/application-qa.properties
-        ↓
 order-service/order-service-qa.properties
+                ↓
+global/application-qa.properties
+                ↓
+order-service/order-service.properties
+                ↓
+global/application.properties
 ```
 
-The most specific property source has the highest precedence.
-
-Therefore, if the same property is defined in multiple files, the service-specific profile configuration takes priority.
+If the same property exists in multiple sources, the value from the higher-precedence source is used.
 
 ### Example
 
@@ -142,13 +140,13 @@ message=This is global default
 ```
 
 ```properties
-# global/application-qa.properties
-message=This is global qa
+# order-service/order-service.properties
+message=This is order-service default
 ```
 
 ```properties
-# order-service/order-service.properties
-message=This is order-service default
+# global/application-qa.properties
+message=This is global qa
 ```
 
 ```properties
@@ -156,15 +154,17 @@ message=This is order-service default
 message=This is order-service qa
 ```
 
-For `order-service` with the `qa` profile, the final value is:
+For `order-service` with the `qa` profile:
 
 ```properties
 message=This is order-service qa
 ```
 
+The service-specific QA configuration wins because it is the most specific source.
+
 ## Global vs Service Configuration
 
-Use the `global` folder for properties that are shared by multiple services.
+Use the `global` folder for properties shared across multiple services.
 
 Example:
 
@@ -172,7 +172,7 @@ Example:
 environment=QA
 ```
 
-Use the service folder for properties that belong specifically to one service.
+Use the service folder for properties specific to one service.
 
 Example:
 
@@ -193,7 +193,7 @@ For refreshable configuration, Spring Cloud supports:
 @RefreshScope
 ```
 
-A service can manually request updated configuration through:
+A running service can manually request updated configuration through:
 
 ```text
 POST /actuator/refresh
@@ -203,7 +203,7 @@ After the refresh, refreshable beans can use the latest configuration obtained t
 
 ## Spring Cloud Bus Refresh
 
-When there are multiple services, refreshing every service individually is inconvenient.
+When multiple services use centralized configuration, manually refreshing every service is inconvenient.
 
 Spring Cloud Bus allows a refresh event to be distributed to multiple services through a message broker such as RabbitMQ.
 
@@ -216,35 +216,35 @@ Configuration Repository
     Config Server
           │
           ▼
-     Bus Refresh
+   Spring Cloud Bus
           │
           ▼
        RabbitMQ
        /            ▼        ▼
- Order Service  Payment Service
+Order Service  Payment Service
       │              │
-    Refresh        Refresh
+   Refresh        Refresh
 ```
 
-A single bus refresh event can notify the connected services so they can refresh their configuration.
+A single bus refresh event can notify connected services so they can refresh their configuration.
 
-This is useful when the same centralized configuration change needs to be applied across multiple running services.
+This is useful when a centralized configuration change needs to be applied across multiple running services.
 
 ## Configuration Flow
 
 ```text
                 Centralized Config
-                      Repository
-                          │
-                          ▼
-                   Config Server
-                          │
-              ┌───────────┴───────────┐
-              ▼                       ▼
-        Order Service           Payment Service
-              │                       │
-              ▼                       ▼
-       Resolved Properties      Resolved Properties
+                    Repository
+                        │
+                        ▼
+                 Config Server
+                        │
+              ┌─────────┴─────────┐
+              ▼                   ▼
+        Order Service       Payment Service
+              │                   │
+              ▼                   ▼
+      Resolved Properties   Resolved Properties
 ```
 
 With Bus Refresh:
@@ -253,14 +253,14 @@ With Bus Refresh:
                  Config Server
                       │
                       ▼
-                Spring Cloud Bus
+              Spring Cloud Bus
                       │
                       ▼
                    RabbitMQ
-                 /                          ▼            ▼
-         Order Service   Payment Service
-              │               │
-           Refresh         Refresh
+                  /                         ▼          ▼
+          Order Service  Payment Service
+               │              │
+            Refresh        Refresh
 ```
 
 ## Purpose
