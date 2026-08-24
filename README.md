@@ -7,7 +7,7 @@ The configuration is managed separately from the application source code and is 
 ## Repository Structure
 
 ```text
-centralized-config-repo/
+centralized-config/
 │
 ├── global/
 │   ├── application.properties
